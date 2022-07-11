@@ -1,0 +1,7 @@
+{
+  "Namespace": "<<NAMESPACE>>",
+  "BaseUrl": "<<BASE_URL>>",
+  "ClientId": "<<SERVER_CLIENT_ID>>",
+  "ClientSecret": "<<SERVER_CLIENT_SERVER>>",
+  "RedirectUri": "http://127.0.0.1"
+}

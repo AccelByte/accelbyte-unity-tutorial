@@ -1,0 +1,12 @@
+{
+  "Namespace": "<<NAMESPACE>>",
+  "UsePlayerPrefs": true,
+  "EnableDebugLog": false,
+  "DebugLogFilter": "Log",
+  "BaseUrl": "<<BASE_URL>>",
+  "ClientId": "<<CLIENT_ID>>",
+  "ClientSecret": "<<CLIENT_SECRET>>",
+  "RedirectUri": "http://127.0.0.1",
+  "AppId": null,
+  "PublisherNamespace": "accelbyte"
+}
