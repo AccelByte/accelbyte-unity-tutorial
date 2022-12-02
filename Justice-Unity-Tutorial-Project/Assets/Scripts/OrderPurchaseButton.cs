@@ -4,6 +4,7 @@
 
 using System;
 using AccelByte.Api;
+using AccelByte.Core;
 using AccelByte.Models;
 using UnityEngine;
 using UnityEngine.UI;
@@ -15,6 +16,15 @@ public class OrderPurchaseButton : MonoBehaviour
 
     [SerializeField]
     private Button orderItemPurchaseButton;
+
+    private Orders orders;
+
+    private void Start()
+    {
+        // AccelByte's Multi Registry initialization
+        ApiClient apiClient = MultiRegistry.GetApiClient();
+        orders = apiClient.GetApi<Orders, OrdersApi>();
+    }
 
     public void Setup(ItemInfo itemInfo, ushort regionIndex, Action successCallback, Action<string> failureCallback, Action loadingCallback)
     {
@@ -47,7 +57,7 @@ public class OrderPurchaseButton : MonoBehaviour
             region = itemInfo.region
         };
         
-        AccelBytePlugin.GetOrders().CreateOrder(orderRequest, result =>
+        orders.CreateOrder(orderRequest, result =>
         {
             if (result.IsError)
             {

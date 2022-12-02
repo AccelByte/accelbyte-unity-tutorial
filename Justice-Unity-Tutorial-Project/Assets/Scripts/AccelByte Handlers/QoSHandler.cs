@@ -3,6 +3,7 @@
 // and restrictions contact your company contract manager.
 
 using AccelByte.Api;
+using AccelByte.Core;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -14,6 +15,10 @@ public class QoSHandler : MonoBehaviour
     private Dropdown regionDropdown;
     [SerializeField]
     private Button refreshButton;
+
+    // AccelByte's Multi Registry references
+    private QosManager qos;
+    private Lobby lobby;
 
     // Store default region name and waiting time to refresh latency automatically
     private const string DefaultRegion = "Default Region";
@@ -29,6 +34,11 @@ public class QoSHandler : MonoBehaviour
 
     private void OnEnable()
     {
+        // AccelByte's Multi Registry initialization
+        ApiClient apiClient = MultiRegistry.GetApiClient();
+        qos = apiClient.GetApi<QosManager, QosManagerApi>();
+        lobby = apiClient.GetApi<Lobby, LobbyApi>();
+
         // Reset boolean when object changes into enable
         isWaiting = false;
     }
@@ -36,7 +46,7 @@ public class QoSHandler : MonoBehaviour
     private void Update()
     {
         // Daily refresh the latency
-        if (isActiveAndEnabled && AccelBytePlugin.GetLobby().IsConnected && !isWaiting)
+        if (isActiveAndEnabled && lobby.IsConnected && !isWaiting)
         {
             StartCoroutine(DailyRefreshLatency());
         }
@@ -80,7 +90,7 @@ public class QoSHandler : MonoBehaviour
     /// </summary>
     public void GetLatency()
     {
-        AccelBytePlugin.GetQos().GetServerLatencies(result => 
+        qos.GetServerLatencies(result => 
         {
             if (!result.IsError)
             {

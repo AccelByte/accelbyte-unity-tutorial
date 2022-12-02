@@ -3,6 +3,7 @@
 // and restrictions contact your company contract manager.
 
 using AccelByte.Api;
+using AccelByte.Core;
 using AccelByte.Models;
 using System.Collections.Generic;
 using UnityEngine;
@@ -20,6 +21,15 @@ public class AchievementHandler : MonoBehaviour
 
     [SerializeField]
     private GameObject achievementDisplayPrefab;
+
+    private Achievement achievement;
+
+    private void Start()
+    {
+        // AccelByte's Multi Registry initialization
+        ApiClient apiClient = MultiRegistry.GetApiClient();
+        achievement = apiClient.GetApi<Achievement, AchievementApi>();
+    }
 
     /// <summary>
     /// Setup Achievement UI
@@ -44,7 +54,7 @@ public class AchievementHandler : MonoBehaviour
         int offset = 0;
         int limit = 99;
 
-        AccelBytePlugin.GetAchievement().QueryUserAchievements(sortBy, userResult =>
+        achievement.QueryUserAchievements(sortBy, userResult =>
         {
             if (userResult.IsError)
             {
@@ -52,7 +62,7 @@ public class AchievementHandler : MonoBehaviour
             }
             else
             {
-                AccelBytePlugin.GetAchievement().QueryAchievements(language, sortBy, result =>
+                achievement.QueryAchievements(language, sortBy, result =>
                 {
                     if (result.IsError)
                     {

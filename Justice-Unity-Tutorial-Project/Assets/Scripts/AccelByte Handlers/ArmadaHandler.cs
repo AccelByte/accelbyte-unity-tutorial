@@ -14,6 +14,19 @@ public static class ArmadaHandler
 {
     private static readonly string[] StatCodes = { "match", "win" };
 
+    private static ServerApiClient serverApiClient;
+    private static DedicatedServerManager dedicatedServerManager;
+    private static ServerMatchmaking serverMatchmaking;
+    private static ServerStatistic serverStatistic;
+
+    private static void Main()
+    {
+        serverApiClient = MultiRegistry.GetServerApiClient();
+        dedicatedServerManager = serverApiClient.GetServerApi<DedicatedServerManager, DedicatedServerManagerApi>();
+        serverMatchmaking = serverApiClient.GetServerApi<ServerMatchmaking, ServerMatchmakingApi>();
+        serverStatistic = serverApiClient.GetServerApi<ServerStatistic, ServerStatisticApi>();
+    }
+
     /// <summary>
     /// Server login with the server client credentials and register DS to DSM
     /// </summary>
@@ -21,6 +34,13 @@ public static class ArmadaHandler
     /// <param name="isLocal"></param>
     public static void LoginServer(int port, bool isLocal)
     {
+        // Initialize the API if it is not yet.
+        if (serverApiClient == null)
+        {
+            Main();
+        }
+
+        // Login to server
         AccelByteServerPlugin.GetDedicatedServer().LoginWithClientCredentials(result =>
         {
             if (result.IsError)
@@ -35,7 +55,7 @@ public static class ArmadaHandler
                 if (!isLocal)
                 {
                     // Register Server to DSM
-                    AccelByteServerPlugin.GetDedicatedServerManager().RegisterServer(port, registerResult =>
+                    dedicatedServerManager.RegisterServer(port, registerResult =>
                     {
                         if (registerResult.IsError)
                         {
@@ -54,7 +74,7 @@ public static class ArmadaHandler
                     uint portNumber = Convert.ToUInt32(port);
 
                     // Register Local Server to DSM
-                    AccelByteServerPlugin.GetDedicatedServerManager().RegisterLocalServer(ip, portNumber, name, registerResult =>
+                    dedicatedServerManager.RegisterLocalServer(ip, portNumber, name, registerResult =>
                     {
                         if (registerResult.IsError)
                         {
@@ -79,7 +99,7 @@ public static class ArmadaHandler
         if (isLocal)
         {
             // Deregister Local Server to DSM
-            AccelByteServerPlugin.GetDedicatedServerManager().DeregisterLocalServer(result => 
+            dedicatedServerManager.DeregisterLocalServer(result => 
             {
                 if (result.IsError)
                 {
@@ -96,7 +116,7 @@ public static class ArmadaHandler
         else
         {
             // Shutdown Server to DSM
-            AccelByteServerPlugin.GetDedicatedServerManager().ShutdownServer(true, result => 
+            dedicatedServerManager.ShutdownServer(true, result => 
             {
                 if (result.IsError)
                 {
@@ -119,7 +139,7 @@ public static class ArmadaHandler
     public static void GetPlayerInfo(ResultCallback<MatchmakingResult> callback)
     {
         // Get session id/ match id from DSM
-        AccelByteServerPlugin.GetDedicatedServerManager().GetSessionId(dsmResult =>
+        dedicatedServerManager.GetSessionId(dsmResult =>
         {
             if (dsmResult.IsError)
             {
@@ -130,7 +150,7 @@ public static class ArmadaHandler
             else
             {
                 // Query Session Status to get match info from Matchmaking
-                AccelByteServerPlugin.GetMatchmaking().QuerySessionStatus(dsmResult.Value.session_id, queryResult =>
+                serverMatchmaking.QuerySessionStatus(dsmResult.Value.session_id, queryResult =>
                 {
                     if (queryResult.IsError)
                     {
@@ -191,7 +211,7 @@ public static class ArmadaHandler
         }
 
         // Update the data to statistic
-        AccelByteServerPlugin.GetStatistic().IncrementManyUsersStatItems(userStatItemList.ToArray(), result => 
+        serverStatistic.IncrementManyUsersStatItems(userStatItemList.ToArray(), result => 
         {
             if (result.IsError)
             {

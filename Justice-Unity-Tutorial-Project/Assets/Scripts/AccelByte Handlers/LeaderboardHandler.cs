@@ -50,6 +50,9 @@ public class LeaderboardHandler : MonoBehaviour
     private Transform userRankingDisplayPlaceholder;
     #endregion
 
+    private User user;
+    private Leaderboard leaderboard;
+
     private LeaderboardData currentLeaderboardData = null;
 
     private int leaderboardOffset = 0;
@@ -109,6 +112,14 @@ public class LeaderboardHandler : MonoBehaviour
         }
     }
 
+    private void Start()
+    {
+        // AccelByte's Multi Registry initialization
+        ApiClient apiClient = MultiRegistry.GetApiClient();
+        user = apiClient.GetApi<User, UserApi>();
+        leaderboard = apiClient.GetApi<Leaderboard, LeaderboardApi>();
+    }
+
     /// <summary>
     /// Setup Leaderboard UI and prepare state
     /// </summary>
@@ -140,7 +151,7 @@ public class LeaderboardHandler : MonoBehaviour
     /// </summary>
     private void GetLeaderboardList()
     {
-        AccelBytePlugin.GetLeaderboard().GetLeaderboardList(result =>
+        leaderboard.GetLeaderboardList(result =>
         {
             if (result.IsError)
             {
@@ -178,7 +189,7 @@ public class LeaderboardHandler : MonoBehaviour
         // Clean and reset the last leaderboard
         LoopThroughTransformAndDestroy(rankingTablePanel, categoryTablePanel, userRankingDisplayPlaceholder);
 
-        AccelBytePlugin.GetLeaderboard().GetRankings(leaderboardCode, timeFrame, offset, limit, result =>
+        leaderboard.GetRankings(leaderboardCode, timeFrame, offset, limit, result =>
         {
             if (result.IsError)
             {
@@ -202,11 +213,11 @@ public class LeaderboardHandler : MonoBehaviour
                 }
 
                 // Add currentUserId to the list to also get its userInfo 
-                string currentUserId = AccelBytePlugin.GetUser().Session.UserId;
+                string currentUserId = user.Session.UserId;
                 userIds.Add(currentUserId);
 
                 // Get UserInfos from the ranking list userIds
-                AccelBytePlugin.GetUser().BulkGetUserInfo(userIds.ToArray(), userInfosResult =>
+                user.BulkGetUserInfo(userIds.ToArray(), userInfosResult =>
                 {
                     if (result.IsError)
                     {
@@ -270,7 +281,7 @@ public class LeaderboardHandler : MonoBehaviour
     /// <param name="timeFrame">current leaderboard's time frame</param>
     private void GetUserRanking(UserRankingDisplayPanel userRankingDisplay, BaseUserInfo userInfo, string leaderboardCode, LeaderboardTimeFrame timeFrame)
     {
-        AccelBytePlugin.GetLeaderboard().GetUserRanking(userInfo.userId, leaderboardCode, result =>
+        leaderboard.GetUserRanking(userInfo.userId, leaderboardCode, result =>
         {
             if (result.IsError)
             {

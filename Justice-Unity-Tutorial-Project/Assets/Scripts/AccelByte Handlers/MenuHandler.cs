@@ -3,6 +3,7 @@
 // and restrictions contact your company contract manager.
 
 using AccelByte.Api;
+using AccelByte.Core;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -14,7 +15,7 @@ public class MenuHandler : MonoBehaviour
     public Button FriendsButton;
     public Button LeaderboardButton;
     public Button StoreButton;
-    public Button SettingsButton;
+    public Button CloudSaveButton;
     public Button GalleryButton;
     public Button InventoryButton;
     public Button AchievementButton;
@@ -30,8 +31,21 @@ public class MenuHandler : MonoBehaviour
 
     #endregion
 
+    private User user;
+    private UserProfiles userProfiles;
+
     private bool isInitialized = false;
 
+    // Cloud Save's Record Key Value Name
+    private string gameSettingsKeyName = "GameSettings";
+    
+    private void OnEnable()
+    {
+        // AccelByte's Multi Registry initialization
+        ApiClient apiClient = MultiRegistry.GetApiClient();
+        user = apiClient.GetApi<User, UserApi>();
+        userProfiles = apiClient.GetApi<UserProfiles, UserProfilesApi>();
+    }
 
     /// <summary>
     /// Initialize the Main Menu's UI
@@ -43,8 +57,8 @@ public class MenuHandler : MonoBehaviour
 
         isInitialized = true;
 
-        // Initialized Screen
-        GetComponent<CloudSaveHandler>().SetupCloudSave();
+        // Initialized Screen based on game settings saved in player record
+        GetComponent<CloudSaveHandler>().GetUserRecord(gameSettingsKeyName);
 
         LobbyButton.onClick.AddListener(() =>
         {
@@ -79,10 +93,11 @@ public class MenuHandler : MonoBehaviour
             GetComponent<StoreHandler>().StoreWindow.SetActive(true);
         });
 
-        SettingsButton.onClick.AddListener(() =>
+        CloudSaveButton.onClick.AddListener(() =>
         {
+            GetComponent<CloudSaveHandler>().SetupCloudSave();
             Menu.gameObject.SetActive(false);
-            GetComponent<CloudSaveHandler>().settingWindow.SetActive(true);
+            GetComponent<CloudSaveHandler>().cloudSaveWindow.SetActive(true);
         });
 
         GalleryButton.onClick.AddListener(() =>
@@ -117,13 +132,13 @@ public class MenuHandler : MonoBehaviour
     /// </summary>
     public void DisplayProfile()
     {
-        AccelBytePlugin.GetUserProfiles().GetUserProfile(result =>
+        userProfiles.GetUserProfile(result =>
         {
             // check this is not an error
             if (!result.IsError)
             {
                 // get the player's display name
-                AccelBytePlugin.GetUser().GetUserByUserId(result.Value.userId, userResult =>
+                user.GetUserByUserId(result.Value.userId, userResult =>
                 {
                     if (!userResult.IsError)
                     {

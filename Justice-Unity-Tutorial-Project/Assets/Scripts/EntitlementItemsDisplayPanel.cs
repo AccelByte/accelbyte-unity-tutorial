@@ -3,6 +3,7 @@
 // and restrictions contact your company contract manager.
 
 using AccelByte.Api;
+using AccelByte.Core;
 using AccelByte.Models;
 using System.Collections;
 using UnityEngine;
@@ -29,6 +30,15 @@ public class EntitlementItemsDisplayPanel : MonoBehaviour
 
     [SerializeField]
     private Button useButton;
+
+    private Entitlement entitlement;
+
+    private void Start()
+    {
+        // AccelByte's Multi Registry initialization
+        ApiClient apiClient = MultiRegistry.GetApiClient();
+        entitlement = apiClient.GetApi<Entitlement, EntitlementApi>();
+    }
 
     /// <summary>
     /// Update Goods Information to the Goods Display's UIs
@@ -73,7 +83,7 @@ public class EntitlementItemsDisplayPanel : MonoBehaviour
     private void ConsumeGoods(string id)
     {
         // Request to consume 1 then retrieve the new information of entitlement
-        AccelBytePlugin.GetEntitlement().ConsumeUserEntitlement(id, 1, consumeResult =>
+        entitlement.ConsumeUserEntitlement(id, 1, consumeResult =>
         {
             entitlementQuantityText.text = consumeResult.Value.useCount.ToString();
 

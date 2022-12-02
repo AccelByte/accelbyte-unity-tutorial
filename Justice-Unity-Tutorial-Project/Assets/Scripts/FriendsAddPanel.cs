@@ -3,6 +3,7 @@
 // and restrictions contact your company contract manager.
 
 using AccelByte.Api;
+using AccelByte.Core;
 using AccelByte.Models;
 using UnityEngine;
 using UnityEngine.UI;
@@ -21,9 +22,20 @@ public class FriendsAddPanel : MonoBehaviour
     [SerializeField]
     private Button addFriendButton;
 
+    // AccelByte's Multi Registry references
+    private Lobby lobby;
+    private UserProfiles userProfiles;
 
     private PublicUserInfo _userData;
-    
+
+    private void OnEnable()
+    {
+        // AccelByte's Multi Registry initialization
+        ApiClient apiClient = MultiRegistry.GetApiClient();
+        lobby = apiClient.GetApi<Lobby, LobbyApi>();
+        userProfiles = apiClient.GetApi<UserProfiles, UserProfilesApi>();
+    }
+
     /// <summary>
     /// An initialisation Function required to be called to Populate the UI appropriately
     /// </summary>
@@ -38,7 +50,7 @@ public class FriendsAddPanel : MonoBehaviour
         addFriendButton.onClick.AddListener(() =>
         {
             //Make the call to initiate the Friend Request
-            AccelBytePlugin.GetLobby().RequestFriend(_userData.userId, result =>
+            lobby.RequestFriend(_userData.userId, result =>
             {
                 if (result.IsError)
                 {
@@ -62,7 +74,7 @@ public class FriendsAddPanel : MonoBehaviour
     /// </summary>
     void RetrieveProfilePicture()
     {
-        AccelBytePlugin.GetUserProfiles().GetUserAvatar(_userData.userId,
+        userProfiles.GetUserAvatar(_userData.userId,
             result =>
             {
                 //If it's not an error, convert the returned texture into a Sprite and Display it

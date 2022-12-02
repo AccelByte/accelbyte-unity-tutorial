@@ -1,7 +1,22 @@
 {
-  "Namespace": "<<NAMESPACE>>",
-  "BaseUrl": "<<BASE_URL>>",
-  "ClientId": "<<SERVER_CLIENT_ID>>",
-  "ClientSecret": "<<SERVER_CLIENT_SERVER>>",
-  "RedirectUri": "http://127.0.0.1"
+  "Development": {
+    "Namespace": null,
+    "BaseUrl": null,
+    "RedirectUri": null
+  },
+  "Certification": {
+    "Namespace": null,
+    "BaseUrl": null,
+    "RedirectUri": null
+  },
+  "Production": {
+    "Namespace": null,
+    "BaseUrl": null,
+    "RedirectUri": null
+  },
+  "Default": {
+    "Namespace": "<<NAMESPACE>>",
+    "BaseUrl": "<<BASE_URL>>",
+    "RedirectUri": "http://127.0.0.1"
+  }
 }

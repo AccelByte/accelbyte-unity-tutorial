@@ -3,6 +3,7 @@
 // and restrictions contact your company contract manager.
 
 using AccelByte.Api;
+using AccelByte.Core;
 using AccelByte.Models;
 using System.Collections;
 using System.Collections.Generic;
@@ -20,6 +21,17 @@ public class PartyInvitationPanel : MonoBehaviour
     [SerializeField]
     private Button rejectInvitationButton;
 
+    // AccelByte's Multi Registry references
+    private User user;
+    private Lobby lobby;
+
+    private void OnEnable()
+    {
+        // AccelByte's Multi Registry initialization
+        ApiClient apiClient = MultiRegistry.GetApiClient();
+        user = apiClient.GetApi<User, UserApi>();
+        lobby = apiClient.GetApi<Lobby, LobbyApi>();
+    }
 
     /// <summary>
     /// Setup PartyInvitation's Popup UI and event listener 
@@ -27,7 +39,7 @@ public class PartyInvitationPanel : MonoBehaviour
     /// <param name="partyInvitation"> contains Party Invitation's data, consists of sender's userId, partyId, and invitationToken</param>
     public void Setup(PartyInvitation partyInvitation)
     {
-        AccelBytePlugin.GetUser().GetUserByUserId(partyInvitation.from, result => 
+        user.GetUserByUserId(partyInvitation.from, result => 
         {
             invitationText.text = result.Value.displayName + " invite you to join their party\nAccept invitation?";
         });
@@ -42,7 +54,7 @@ public class PartyInvitationPanel : MonoBehaviour
     /// <param name="partyInvitation"> contains Party Invitation's data, consists of sender's userId, partyId, and invitationToken</param>
     public void JoinParty(PartyInvitation partyInvitation)
     {
-        AccelBytePlugin.GetLobby().JoinParty(partyInvitation.partyID, partyInvitation.invitationToken, result => 
+        lobby.JoinParty(partyInvitation.partyID, partyInvitation.invitationToken, result => 
         {
             if (result.IsError)
             {
@@ -63,7 +75,7 @@ public class PartyInvitationPanel : MonoBehaviour
     /// <param name="partyInvitation"> contains Party Invitation's data, consists of sender's userId, partyId, and invitationToken</param>
     public void RejectPartyInvitation(PartyInvitation partyInvitation)
     {
-        AccelBytePlugin.GetLobby().RejectPartyInvitation(partyInvitation.partyID, partyInvitation.invitationToken, result => 
+        lobby.RejectPartyInvitation(partyInvitation.partyID, partyInvitation.invitationToken, result => 
         {
             if (result.IsError)
             {

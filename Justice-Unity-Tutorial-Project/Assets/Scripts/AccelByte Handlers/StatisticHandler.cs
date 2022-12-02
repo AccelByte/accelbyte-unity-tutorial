@@ -14,6 +14,15 @@ public class StatisticHandler : MonoBehaviour
 {
     private const string StatCode = "vc-spending";
 
+    private Statistic statistic;
+
+    private void Start()
+    {
+        // AccelByte's Multi Registry initialization
+        ApiClient apiClient = MultiRegistry.GetApiClient();
+        statistic = apiClient.GetApi<Statistic, StatisticApi>();
+    }
+
     /// <summary>
     /// Update vc-spending stat item
     /// </summary>
@@ -25,7 +34,7 @@ public class StatisticHandler : MonoBehaviour
             new StatItemIncrement { statCode = StatCode, inc = value }
         };
 
-        AccelBytePlugin.GetStatistic().IncrementUserStatItems(statItems, result => 
+        statistic.IncrementUserStatItems(statItems, result => 
         {
             if (result.IsError)
             {

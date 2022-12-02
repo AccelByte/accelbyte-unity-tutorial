@@ -34,9 +34,13 @@ public class CloudStorageHandler : MonoBehaviour
 
     [SerializeField]
     private Image screenshotImage;
-    
+
     #endregion
-    
+
+    // AccelByte's Multi Registry references
+    private User user;
+    private CloudStorage cloudStorage;
+
     private const string ScreenshotLabel = "screenshot-label";
     private const string ScreenshotTag = "screenshot-tag";
     private const string ScreenshotDir = "Saved/Screenshot/";
@@ -44,7 +48,15 @@ public class CloudStorageHandler : MonoBehaviour
     
     private string screenshotSlotId;
     private string screenshotSlotName;
-    
+
+    private void Start()
+    {
+        // AccelByte's Multi Registry initialization
+        ApiClient apiClient = MultiRegistry.GetApiClient();
+        user = apiClient.GetApi<User, UserApi>();
+        cloudStorage = apiClient.GetApi<CloudStorage, CloudStorageApi>();
+    }
+
     public void Setup()
     {
         galleryPanel.SetActive(true);
@@ -68,7 +80,7 @@ public class CloudStorageHandler : MonoBehaviour
     private void CheckSlot(Action onSuccess)
     {
         // check if screenshot slot exist or not
-        AccelBytePlugin.GetCloudStorage().GetAllSlots(result =>
+        cloudStorage.GetAllSlots(result =>
         {
             if (result.IsError)
             {
@@ -92,7 +104,7 @@ public class CloudStorageHandler : MonoBehaviour
                 
                 // if screenshot slot does not exist, create one
                 byte[] placeholderByte = Encoding.ASCII.GetBytes("placeholder");
-                AccelBytePlugin.GetCloudStorage().CreateSlot(placeholderByte, "", createResult =>
+                cloudStorage.CreateSlot(placeholderByte, "", createResult =>
                 {
                     if (createResult.IsError)
                     {
@@ -125,7 +137,7 @@ public class CloudStorageHandler : MonoBehaviour
             string dir = Path.Combine(Application.dataPath, ScreenshotDir, screenshotName);
             
             byte[] imageByte = File.ReadAllBytes(dir);
-            AccelBytePlugin.GetCloudStorage().UpdateSlot(screenshotSlotId, imageByte, screenshotName, result =>
+            cloudStorage.UpdateSlot(screenshotSlotId, imageByte, screenshotName, result =>
             {
                 if (result.IsError)
                 {
@@ -150,7 +162,7 @@ public class CloudStorageHandler : MonoBehaviour
         {
             ScreenshotTag
         };
-        AccelBytePlugin.GetCloudStorage().UpdateSlotMetadata(screenshotSlotId, tags, ScreenshotLabel, "", 
+        cloudStorage.UpdateSlotMetadata(screenshotSlotId, tags, ScreenshotLabel, "", 
             updateResult =>
             {
                 if (updateResult.IsError)
@@ -194,7 +206,7 @@ public class CloudStorageHandler : MonoBehaviour
                 return;
             }
             
-            AccelBytePlugin.GetCloudStorage().GetSlot(screenshotSlotId, result =>
+            cloudStorage.GetSlot(screenshotSlotId, result =>
             {
                 if (result.IsError)
                 {
@@ -269,7 +281,7 @@ public class CloudStorageHandler : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if (Input.GetButtonDown("Screenshot") && AccelBytePlugin.GetUser().Session.IsValid())
+        if (Input.GetButtonDown("Screenshot") && user.Session.IsValid())
         {
             Debug.Log($"taking screenshot");
             StartCoroutine(TakeScreenshot());

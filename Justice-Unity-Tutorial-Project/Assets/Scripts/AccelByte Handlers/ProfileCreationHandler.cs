@@ -8,6 +8,7 @@ using UnityEngine;
 using AccelByte.Api;
 using AccelByte.Models;
 using UnityEngine.UI;
+using AccelByte.Core;
 
 /// <summary>
 /// A Handler Class to deal with the Creation of <see cref="PublicUserData"/> if a User Does NOT have one
@@ -43,8 +44,16 @@ public class ProfileCreationHandler : MonoBehaviour
 
     [SerializeField]
     private GameObject profilePanel;
-    
-    
+
+    private UserProfiles userProfiles;
+
+    private void Start()
+    {
+        // AccelByte's Multi Registry initialization
+        ApiClient apiClient = MultiRegistry.GetApiClient();
+        userProfiles = apiClient.GetApi<UserProfiles, UserProfilesApi>();
+    }
+
     public void Setup()
     {
         //Reset all of the Dropdown Options and InputFields in case they have changed between users 
@@ -117,7 +126,7 @@ public class ProfileCreationHandler : MonoBehaviour
         };
         
         //Send the Request with the Constructed payload
-        AccelBytePlugin.GetUserProfiles().CreateUserProfile(request, result =>
+        userProfiles.CreateUserProfile(request, result =>
         {
             //If there is an error, display the error information and set the button back to be interactable
             if (result.IsError)

@@ -37,6 +37,10 @@ public class LoginHandler : MonoBehaviour
     InputField passwordInputField;
     [SerializeField]
     RectTransform loginPanel;
+
+    // AccelByte's Multi Registry references
+    private ApiClient apiClient;
+    private User user;
     
     private void OnEnable()
     {
@@ -52,8 +56,14 @@ public class LoginHandler : MonoBehaviour
 
     private void Start()
     {
+        // AccelByte's Multi Registry initialization
+        apiClient = MultiRegistry.GetApiClient();
+        //Grab a reference to the current User, even though they have not been logged in yet. 
+        //This also acts as the initialisation point for the whole AccelByte plugin.
+        user = apiClient.GetApi<User, UserApi>();
+
         // If session is still valid, go to lobby menu
-        if (AccelBytePlugin.GetUser().Session.IsValid())
+        if (user.Session.IsValid())
         {
             LobbyHandler.Instance.ConnectToLobby();
             loginPanel.gameObject.SetActive(false);
@@ -80,9 +90,7 @@ public class LoginHandler : MonoBehaviour
         //Disable Interaction with the Login Button so the player cannot spam click it and send multiple requests
         loginButton.interactable = false;
         statusText.text = "Logging in...";
-        //Grab a reference to the current User, even though they have not been logged in yet. 
-        //This also acts as the initialisation point for the whole AccelByte plugin.
-        User user = AccelBytePlugin.GetUser();
+        
         //Calling the Login Function and supplying a callback to act upon based upon success or failure
         //You will almost certainly want to extend this functionality further
         //Note that this callback is asynchronous
@@ -117,9 +125,7 @@ public class LoginHandler : MonoBehaviour
     public void OnLogoutClicked()
     {
         Debug.Log($"Logging out...");
-        //Grab a User reference
-        User user = AccelBytePlugin.GetUser();
-
+        
         // Call Lobby Handler to disconnect from lobby
         LobbyHandler.Instance.DisconnectFromLobby();
 

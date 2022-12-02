@@ -9,7 +9,6 @@ using AccelByte.Models;
 using AccelByte.Core;
 using UnityEngine;
 using UnityEngine.UI;
-using WebSocketSharp;
 
 public class AgreementHandler : MonoBehaviour
 {
@@ -47,9 +46,22 @@ public class AgreementHandler : MonoBehaviour
 
     private List<RequiredDoc> requiredDocs;
 
+    private User user;
+    private UserProfiles userProfiles;
+    private Agreement agreement;
+
+    private void Start()
+    {
+        // AccelByte's Multi Registry initialization
+        ApiClient apiClient = MultiRegistry.GetApiClient();
+        user = apiClient.GetApi<User, UserApi>();
+        userProfiles = apiClient.GetApi<UserProfiles, UserProfilesApi>();
+        agreement = apiClient.GetApi<Agreement, AgreementApi>();
+    }
+
     public void Setup()
     {
-        if (AccelBytePlugin.GetUser().Session.IsComply)
+        if (user.Session.IsComply)
         {
             Debug.Log("User already agreed to the latest agreement");
             CheckUserProfile();
@@ -83,7 +95,7 @@ public class AgreementHandler : MonoBehaviour
     /// </summary>
     private void CheckUserProfile()
     {
-        AccelBytePlugin.GetUserProfiles().GetUserProfile(profileResult =>
+        userProfiles.GetUserProfile(profileResult =>
         {
             if (profileResult.IsError)
             {
@@ -106,7 +118,7 @@ public class AgreementHandler : MonoBehaviour
     /// </summary>
     private void QueryLegalDocs()
     {
-        AccelBytePlugin.GetAgreement().QueryLegalEligibilities(AccelBytePlugin.Config.Namespace, legalResult =>
+        agreement.QueryLegalEligibilities(legalResult =>
         {
             if (legalResult.IsError)
             {
@@ -153,7 +165,7 @@ public class AgreementHandler : MonoBehaviour
                         }
                         
                         // get first index if no locale match
-                        if (requiredDoc.localizedPolicyVersionId.IsNullOrEmpty())
+                        if (string.IsNullOrEmpty(requiredDoc.localizedPolicyVersionId))
                         {
                             requiredDoc.localizedPolicyVersionId = policyVersion.localizedPolicyVersions[0].id;
                             requiredDoc.url = policy.baseUrls[0] + policyVersion.localizedPolicyVersions[0].attachmentLocation;
@@ -176,7 +188,7 @@ public class AgreementHandler : MonoBehaviour
         agreementAgreeToggle.isOn = false;
         agreementAgreeToggle.interactable = false;
         
-        AccelBytePlugin.GetAgreement().GetLegalDocument(requiredDocs[currentDocsIndex].url, result =>
+        agreement.GetLegalDocument(requiredDocs[currentDocsIndex].url, result =>
         {
             if (result.IsError)
             {
@@ -215,7 +227,7 @@ public class AgreementHandler : MonoBehaviour
                 };
             }
         
-            AccelBytePlugin.GetAgreement().BulkAcceptPolicyVersions(acceptAgreementRequests, result =>
+            agreement.BulkAcceptPolicyVersions(acceptAgreementRequests, result =>
             {
                 if (result.IsError)
                 {
@@ -226,7 +238,7 @@ public class AgreementHandler : MonoBehaviour
                     Debug.Log("Success to bulk accept legal agreement");
                 
                     // refresh login
-                    AccelBytePlugin.GetUser().RefreshSession((Result<TokenData, OAuthError> refreshResult) =>
+                    user.RefreshSession((Result<TokenData, OAuthError> refreshResult) =>
                     {
                         if (refreshResult.IsError)
                         {

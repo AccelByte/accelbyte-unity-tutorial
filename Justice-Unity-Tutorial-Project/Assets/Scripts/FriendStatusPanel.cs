@@ -3,6 +3,7 @@
 // and restrictions contact your company contract manager.
 
 using AccelByte.Api;
+using AccelByte.Core;
 using AccelByte.Models;
 using UnityEngine;
 using UnityEngine.UI;
@@ -29,41 +30,69 @@ public class FriendStatusPanel : MonoBehaviour
     private Text displayNameText;
     [SerializeField]
     private Text onlineStatusText;
-    
-    
-    PublicUserData _userData;
 
-    
-    void SetOnlineStatus(FriendsStatusNotif notification)
+    // AccelByte's Multi Registry references
+    private Lobby lobby;
+    private UserProfiles userProfiles;
+
+    private BaseUserInfo _userData;
+
+    private void OnEnable()
+    {
+        // AccelByte's Multi Registry initialization
+        ApiClient apiClient = MultiRegistry.GetApiClient();
+        lobby = apiClient.GetApi<Lobby, LobbyApi>();
+        userProfiles = apiClient.GetApi<UserProfiles, UserProfilesApi>();
+    }
+
+    /// <summary>
+    /// Set online status in the panel
+    /// </summary>
+    /// <param name="notification"> Contains data of user id, availability, activty, and last seen</param>
+    public void SetOnlineStatus(FriendsStatusNotif notification)
     {
         switch (notification.availability)
         {
-            case "offline":
+            case UserStatus.Offline:
                 onlineStatusText.text = "Offline";
-                statusDisplay.color = Color.black;
+                statusDisplay.color = Color.grey;
                 break;
-            case "online":
+            case UserStatus.Online:
                 onlineStatusText.text = "Online";
                 statusDisplay.color = Color.green;
                 break;
-            case "busy":
+            case UserStatus.Busy:
                 onlineStatusText.text = "Busy";
-                statusDisplay.color = Color.yellow;
+                statusDisplay.color = Color.red;
                 break;
-            case "invisible":
+            case UserStatus.Invisible:
                 onlineStatusText.text = "Offline";
-                statusDisplay.color = Color.black;
+                statusDisplay.color = Color.grey;
                 break;
             default:
                 onlineStatusText.text = $"INVALID UNHANDLED {notification.availability}";
-                statusDisplay.color = Color.magenta;
+                statusDisplay.color = Color.black;
+                break;
+        }
+
+        switch (notification.activity)
+        {
+            case "Away":
+                onlineStatusText.text = notification.activity;
+                statusDisplay.color = Color.yellow;
+                break;
+            case "In-Game":
+                onlineStatusText.text = notification.activity;
+                statusDisplay.color = Color.blue;
+                break;
+            default:
                 break;
         }
         
-        Debug.Log($"Friend Status for {notification.userID} changed to {notification.availability}");
+        Debug.Log($"Friend availability for {notification.userID} is {onlineStatusText.text}");
     }
 
-    public void Create(PublicUserData pud)
+    public void Create(BaseUserInfo pud)
     {
         _userData = pud;
         displayNameText.text = _userData.displayName;
@@ -73,12 +102,15 @@ public class FriendStatusPanel : MonoBehaviour
 
     void RetrieveProfilePicture()
     {
-        AccelBytePlugin.GetUserProfiles().GetUserAvatar(_userData.userId,
+        userProfiles.GetUserAvatar(_userData.userId,
             result =>
             {
                 if (!result.IsError)
                 {
-                    profilePicture.sprite = Sprite.Create(result.Value,new Rect(0f,0f,64f,64f),Vector2.zero);
+                    if (profilePicture != null)
+                    {
+                        profilePicture.sprite = Sprite.Create(result.Value, new Rect(0f, 0f, 64f, 64f), Vector2.zero);
+                    } 
                 }
                 else
                 {
@@ -86,12 +118,6 @@ public class FriendStatusPanel : MonoBehaviour
                 }
             }
         );
-    }
-    
-    public void UpdateUser(FriendsStatusNotif notification)
-    {
-        SetOnlineStatus(notification);
-        
     }
 
     /// <summary>
@@ -109,7 +135,7 @@ public class FriendStatusPanel : MonoBehaviour
         });
         unfriendButton.onClick.AddListener(() =>
         {
-            AccelBytePlugin.GetLobby().Unfriend(_userData.userId, result =>
+            lobby.Unfriend(_userData.userId, result =>
             {
                 if (result.IsError)
                 {
@@ -124,7 +150,7 @@ public class FriendStatusPanel : MonoBehaviour
         });
         blockButton.onClick.AddListener(() =>
         {
-            AccelBytePlugin.GetLobby().BlockPlayer(_userData.userId, result =>
+            lobby.BlockPlayer(_userData.userId, result =>
             {
                 if (result.IsError)
                 {

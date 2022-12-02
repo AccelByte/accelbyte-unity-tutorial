@@ -3,6 +3,7 @@
 // and restrictions contact your company contract manager.
 
 using AccelByte.Api;
+using AccelByte.Core;
 using AccelByte.Models;
 using System.Collections.Generic;
 using UnityEngine;
@@ -27,8 +28,18 @@ public class StoreHandler : MonoBehaviour
 
     private static Button firstCategoryButton;
 
+    private Categories categories;
+    private Items items;
+
     private static bool isInitialized = false;
 
+    private void Start()
+    {
+        // AccelByte's Multi Registry initialization
+        ApiClient apiClient = MultiRegistry.GetApiClient();
+        categories = apiClient.GetApi<Categories, CategoriesApi>();
+        items = apiClient.GetApi<Items, ItemsApi>();
+    }
 
     /// <summary>
     /// Setup Store UI
@@ -56,7 +67,7 @@ public class StoreHandler : MonoBehaviour
         }
 
         string language = "en";
-        AccelBytePlugin.GetCategories().GetRootCategories(language, result => 
+        categories.GetRootCategories(language, result => 
         {
             if (result.IsError) 
             {
@@ -107,7 +118,7 @@ public class StoreHandler : MonoBehaviour
             categoryPath = path
         };
 
-        AccelBytePlugin.GetItems().GetItemsByCriteria(itemCriteria, result =>
+        items.GetItemsByCriteria(itemCriteria, result =>
         {
             if (result.IsError)
             {

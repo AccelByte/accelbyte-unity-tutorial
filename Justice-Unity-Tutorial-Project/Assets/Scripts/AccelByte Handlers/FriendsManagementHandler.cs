@@ -9,14 +9,17 @@ using AccelByte.Models;
 using UnityEngine.Serialization;
 using UnityEngine.UI;
 using Button = UnityEngine.UI.Button;
+using AccelByte.Core;
 
 public class FriendsManagementHandler : MonoBehaviour
 {
-    private Dictionary<string, FriendStatusPanel> friendUIDictionary = new Dictionary<string, FriendStatusPanel>();
+    public Dictionary<string, FriendStatusPanel> friendUIDictionary = new Dictionary<string, FriendStatusPanel>();
 
     [Header("Panels")]
     public GameObject FriendsManagementWindow;
-    
+
+    public Text availabilityText;
+
     [FormerlySerializedAs("FriendsPanel")]
     [SerializeField]
     private RectTransform friendsPanel;
@@ -110,7 +113,11 @@ public class FriendsManagementHandler : MonoBehaviour
 
     #endregion
 
-    private static bool isInitialized = false;
+    // AccelByte's Multi Registry references
+    private User user;
+    private Lobby lobby;
+
+    private bool isInitialized = false;
 
     public enum PanelMode
     {
@@ -196,18 +203,12 @@ public class FriendsManagementHandler : MonoBehaviour
     }
     #endregion
 
-    public void UpdateFriends(FriendsStatusNotif notification)
+    private void Start()
     {
-        //Find the friend and update it's UI
-        if (friendUIDictionary.ContainsKey(notification.userID))
-        {
-            friendUIDictionary[notification.userID].UpdateUser(notification);
-        }
-        //Otherwise We should handle this in some way, possibly creating a Friend UI Piece
-        else
-        {
-            Debug.Log("Unregistered Friend received a Notification");
-        }
+        // AccelByte's Multi Registry initialization
+        ApiClient apiClient = MultiRegistry.GetApiClient();
+        user = apiClient.GetApi<User, UserApi>();
+        lobby = apiClient.GetApi<Lobby, LobbyApi>();
     }
 
     /// <summary>
@@ -275,7 +276,7 @@ public class FriendsManagementHandler : MonoBehaviour
         //Cleanup First
         LoopThroughTransformAndDestroy(friendsDisplayPanel.transform, friendsDisplayPlaceholder);
 
-        AccelBytePlugin.GetLobby().LoadFriendsList(result =>
+        lobby.LoadFriendsList(result =>
         { 
             //Check this is not an error
             if (!result.IsError)
@@ -290,17 +291,38 @@ public class FriendsManagementHandler : MonoBehaviour
                 //Hide the Placeholder Text
                 friendsDisplayPlaceholder.gameObject.SetActive(false);
 
-                
                 //Fire off Requests to create UI for each friend
                 Debug.Log("Loaded Friends List Succesfully");
-                foreach (string friendID in result.Value.friendsId)
+
+                user.BulkGetUserInfo(result.Value.friendsId, x =>
                 {
-                    Debug.Log($"Friend : {friendID}");
-                    AccelBytePlugin.GetUser().GetUserByUserId(friendID, x =>
+                    for (int i = 0; i < x.Value.data.Length; i++)
                     {
-                        CreateFriendUI(x.Value);
+                        CreateFriendUI(x.Value.data[i]);
+                    }
+
+                    // Update friend status
+                    LobbyHandler.Instance.presenceHandler.UpdateFriendListStatus(statusResult =>
+                    {
+                        for (int i = 0; i < statusResult.friendsId.Length; i++)
+                        {
+                            Debug.Log($"Friend : {statusResult.friendsId[i]} : {statusResult.availability[i].ToString()}");
+
+                            FriendsStatusNotif friendsStatusNotif = new FriendsStatusNotif()
+                            {
+                                userID = statusResult.friendsId[i],
+                                activity = statusResult.activity[i],
+                                availability = statusResult.availability[i],
+                                lastSeenAt = statusResult.lastSeenAt[i]
+                            };
+
+                            if (friendUIDictionary.ContainsKey(statusResult.friendsId[i]))
+                            {
+                                friendUIDictionary[statusResult.friendsId[i]].SetOnlineStatus(friendsStatusNotif);
+                            }
+                        }
                     });
-                }    
+                });
             }
             else
             {
@@ -308,7 +330,6 @@ public class FriendsManagementHandler : MonoBehaviour
                 friendsDisplayPlaceholder.gameObject.SetActive(true);
                 Debug.LogWarning("Error in Getting Friends");
             }
-            
         });
     }
 
@@ -316,10 +337,11 @@ public class FriendsManagementHandler : MonoBehaviour
     /// Create Friend Prefab With Player Detail
     /// </summary>
     /// <param name="userData">Player Detail</param>
-    private void CreateFriendUI(PublicUserData userData)
+    private void CreateFriendUI(BaseUserInfo userData)
     {
         FriendStatusPanel panel = Instantiate(friendsDisplayPrefab, friendsDisplayPanel).GetComponent<FriendStatusPanel>();
         panel.Create(userData);
+
         if (!friendUIDictionary.ContainsKey(userData.userId))
         {
             friendUIDictionary.Add(userData.userId, panel);
@@ -330,13 +352,15 @@ public class FriendsManagementHandler : MonoBehaviour
 
     private void DisplaySearch()
     {
-        friendsSearchPanel.gameObject.SetActive(true);  LoopThroughTransformAndDestroy(friendsSearchScrollView.transform, friendsSearchPlaceholder);
+        LoopThroughTransformAndDestroy(friendsSearchScrollView.transform, friendsSearchPlaceholder);
+
+        friendsSearchPanel.gameObject.SetActive(true);  
         friendsSearchPlaceholder.gameObject.SetActive(true);
     }
     
     private void SearchForFriends(string query)
     {
-        AccelBytePlugin.GetUser().SearchUsers(query, result =>
+        user.SearchUsers(query, result =>
         {
             if (!result.IsError)
             {
@@ -376,7 +400,7 @@ public class FriendsManagementHandler : MonoBehaviour
         LoopThroughTransformAndDestroy(pendingOutgoingRequestsContent.transform, pendingOutgoingRequestPlaceholder);
 
         //Get all Incoming Friend Requests
-        AccelBytePlugin.GetLobby().ListIncomingFriends(result =>
+        lobby.ListIncomingFriends(result =>
         {
             //Check for an Error
             if (result.IsError)
@@ -402,7 +426,7 @@ public class FriendsManagementHandler : MonoBehaviour
                 foreach (string userID in result.Value.friendsId)
                 {
                     //Request the PublicUserData for the specific Friend
-                    AccelBytePlugin.GetUser().GetUserByUserId(userID, userResult =>
+                    user.GetUserByUserId(userID, userResult =>
                     {
                         //If it's an Error, report it and do nothing else
                         if (userResult.IsError)
@@ -422,7 +446,7 @@ public class FriendsManagementHandler : MonoBehaviour
             }
         });
         
-        AccelBytePlugin.GetLobby().ListOutgoingFriends(result =>
+        lobby.ListOutgoingFriends(result =>
         {
             if (result.IsError)
             {
@@ -440,7 +464,7 @@ public class FriendsManagementHandler : MonoBehaviour
                 }
                 foreach (string userID in result.Value.friendsId)
                 {
-                    AccelBytePlugin.GetUser().GetUserByUserId(userID, userResult =>
+                    user.GetUserByUserId(userID, userResult =>
                     {
                         if (userResult.IsError)
                         {
@@ -451,13 +475,10 @@ public class FriendsManagementHandler : MonoBehaviour
                             FriendsOutgoingPanel outgoingPanel = Instantiate(pendingOutgoingRequestsPrefab, pendingOutgoingRequestsContent).GetComponent<FriendsOutgoingPanel>();
                             outgoingPanel.Create(userResult.Value);
                         }
-                    
                     });
-                     
                 }
             }
         });
-        
     }
 
     private void DisplayBlocked()
@@ -466,7 +487,7 @@ public class FriendsManagementHandler : MonoBehaviour
         LoopThroughTransformAndDestroy(blockedContent.transform,blockedDisplayPlaceholder);
         
         //Get Blocked List
-        AccelBytePlugin.GetLobby().GetListOfBlockedUser(result =>
+        lobby.GetListOfBlockedUser(result =>
         {
             //Check for an Error
             if (result.IsError)
@@ -490,7 +511,7 @@ public class FriendsManagementHandler : MonoBehaviour
                 foreach (BlockedData blockedUser in result.Value.data)
                 {
                     //Request the PublicUserData for the specific User
-                    AccelBytePlugin.GetUser().GetUserByUserId(blockedUser.blockedUserId, userResult =>
+                    user.GetUserByUserId(blockedUser.blockedUserId, userResult =>
                     {
                         //If it's an Error, report it and do nothing else
                         if (userResult.IsError)
@@ -530,10 +551,11 @@ public class FriendsManagementHandler : MonoBehaviour
     /// </summary>
     /// <param name="parent">Parent Object to destroy children</param>
     /// <param name="doNotRemove">Optional specified Transform that should NOT be destroyed</param>
-    private static void LoopThroughTransformAndDestroy(Transform parent, Transform doNotRemove = null)
+    private void LoopThroughTransformAndDestroy(Transform parent, Transform doNotRemove = null)
     {
         //Loop through all the children and add them to a List to then be deleted
         List<GameObject> toBeDeleted = new List<GameObject>();
+
         foreach (Transform t in parent)
         {
             //except the Do Not Remove transform if there is one
@@ -547,6 +569,8 @@ public class FriendsManagementHandler : MonoBehaviour
         {
             Destroy(toBeDeleted[i]);
         }
+
+        friendUIDictionary.Clear();
     }
 
     /// <summary>

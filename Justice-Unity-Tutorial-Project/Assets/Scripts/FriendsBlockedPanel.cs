@@ -3,6 +3,7 @@
 // and restrictions contact your company contract manager.
 
 using AccelByte.Api;
+using AccelByte.Core;
 using AccelByte.Models;
 using UnityEngine;
 using UnityEngine.UI;
@@ -16,9 +17,21 @@ public class FriendsBlockedPanel : MonoBehaviour
     private Text displayNameText;
     [SerializeField]
     private Button unblockButton;
-    
+
+    // AccelByte's Multi Registry references
+    private Lobby lobby;
+    private UserProfiles userProfiles;
+
     private PublicUserData _userData;
-    
+
+    private void OnEnable()
+    {
+        // AccelByte's Multi Registry initialization
+        ApiClient apiClient = MultiRegistry.GetApiClient();
+        lobby = apiClient.GetApi<Lobby, LobbyApi>();
+        userProfiles = apiClient.GetApi<UserProfiles, UserProfilesApi>();
+    }
+
     /// <summary>
     /// An initialisation Function required to be called to Populate the UI appropriately
     /// </summary>
@@ -33,7 +46,7 @@ public class FriendsBlockedPanel : MonoBehaviour
         unblockButton.onClick.AddListener(() =>
         {
             //Make the Call to Unblock the given User using the cached PublicUserData UserID
-            AccelBytePlugin.GetLobby().UnblockPlayer(_userData.userId, result =>
+            lobby.UnblockPlayer(_userData.userId, result =>
             {
                 if (result.IsError)
                 {
@@ -60,7 +73,7 @@ public class FriendsBlockedPanel : MonoBehaviour
     void RetrieveProfilePicture()
     {
         //Request the Avatar based on the UserID
-        AccelBytePlugin.GetUserProfiles().GetUserAvatar(_userData.userId,
+        userProfiles.GetUserAvatar(_userData.userId,
             result =>
             {
                 //If it's not an error, convert the returned texture into a Sprite and Display it

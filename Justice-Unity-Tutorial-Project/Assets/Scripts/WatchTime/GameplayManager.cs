@@ -8,6 +8,7 @@ using System.Linq;
 using UnityEngine;
 using AccelByte.Api;
 using Mirror;
+using AccelByte.Core;
 
 public class GameplayManager : NetworkBehaviour
 {
@@ -62,7 +63,8 @@ public class GameplayManager : NetworkBehaviour
         NetworkClient.RegisterHandler<ClientOnAllPlayerStopTime>(OnAllClientStopTime);
 
         // Current user's userId and displayName
-        string userId = AccelBytePlugin.GetUser().Session.UserId;
+        User user = MultiRegistry.GetApiClient().GetApi<User, UserApi>();
+        string userId = user.Session.UserId;
         string displayName = LobbyHandler.Instance.partyHandler.partyMembers[userId];
 
         NetworkClient.connection.Send(new ServerStartClientMessage { playerId = userId, displayName = displayName });

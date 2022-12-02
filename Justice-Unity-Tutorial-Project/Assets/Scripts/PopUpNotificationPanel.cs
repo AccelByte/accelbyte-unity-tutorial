@@ -3,6 +3,7 @@
 // and restrictions contact your company contract manager.
 
 using AccelByte.Api;
+using AccelByte.Core;
 using AccelByte.Models;
 using System;
 using System.Collections;
@@ -29,6 +30,7 @@ public class PopUpNotificationPanel : MonoBehaviour
     private GameObject achievementPopUpPrefab;
     #endregion
 
+    private Achievement achievement;
 
     private void Awake()
     {
@@ -46,7 +48,14 @@ public class PopUpNotificationPanel : MonoBehaviour
         // Keep the Pop Up Panel Object even after changing scene
         DontDestroyOnLoad(this);
     }
-    
+
+    private void Start()
+    {
+        // AccelByte's Multi Registry initialization
+        ApiClient apiClient = MultiRegistry.GetApiClient();
+        achievement = apiClient.GetApi<Achievement, AchievementApi>();
+    }
+
     /// <summary>
     /// Check achievement if it's already unlocked, if haven't then call the unlockAchievement() SDK function
     /// </summary>
@@ -55,7 +64,7 @@ public class PopUpNotificationPanel : MonoBehaviour
     {
         // check achievement's unlocked status from UserAchievement
         AchievementSortBy sortBy = AchievementSortBy.LISTORDER;
-        AccelBytePlugin.GetAchievement().QueryUserAchievements(sortBy, result =>
+        achievement.QueryUserAchievements(sortBy, result =>
         {
             if (!result.IsError)
             {
@@ -72,7 +81,7 @@ public class PopUpNotificationPanel : MonoBehaviour
                 if (!unlockedStatus)
                 {
                     // try unlock achievement
-                    AccelBytePlugin.GetAchievement().UnlockAchievement(achievementCode, achievementResult =>
+                    achievement.UnlockAchievement(achievementCode, achievementResult =>
                     {
                         if (result.IsError)
                         {
@@ -94,7 +103,7 @@ public class PopUpNotificationPanel : MonoBehaviour
     /// <param name="achievementCode"></param>
     public void CreateAchievementPopUp(string achievementCode)
     {
-        AccelBytePlugin.GetAchievement().GetAchievement(achievementCode, result =>
+        achievement.GetAchievement(achievementCode, result =>
         {
             if (result.IsError)
             {

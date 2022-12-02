@@ -1,13 +1,13 @@
 {
   "dependencies": {
     "com.accelbyte.unitysdk": {
-      "version": "https://github.com/AccelByte/accelbyte-unity-sdk.git",
+      "version": "https://github.com/AccelByte/accelbyte-unity-sdk.git#15.3.0",
       "depth": 0,
       "source": "git",
       "dependencies": {
         "com.unity.nuget.newtonsoft-json": "3.0.1"
       },
-      "hash": "3eb4d46ad8297299cae94f92434c9f490c61fbec"
+      "hash": "aabe551911c97a0e4682aebd985e8fea9071d67d"
     },
     "com.unity.collab-proxy": {
       "version": "1.12.5",

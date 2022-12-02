@@ -38,15 +38,24 @@ public class PartyHandler : MonoBehaviour
     [SerializeField]
     private Text partyIdText;
 
+    // AccelByte's Multi Registry references
+    private User user;
+    private Lobby lobby;
+
     private bool isInitialized = false;
 
     public Dictionary<string, string> partyMembers { private set; get; }
 
     private void Start()
     {
-        if (AccelBytePlugin.GetLobby().IsConnected)
+        // AccelByte's Multi Registry initialization
+        ApiClient apiClient = MultiRegistry.GetApiClient();
+        user = apiClient.GetApi<User, UserApi>();
+        lobby = apiClient.GetApi<Lobby, LobbyApi>();
+
+        if (lobby.IsConnected)
         {
-            AccelBytePlugin.GetLobby().GetPartyInfo(partyInfoResult =>
+            lobby.GetPartyInfo(partyInfoResult =>
             {
                 // Update PartyID in UI
                 partyIdText.text = "PartyID: " + partyInfoResult.Value.partyID;
@@ -54,7 +63,7 @@ public class PartyHandler : MonoBehaviour
                 ResetPlayerEntryUI();
 
                 // Get all party members data based on _partyUserIds, then update data to UI
-                AccelBytePlugin.GetUser().BulkGetUserInfo(partyInfoResult.Value.members, result =>
+                user.BulkGetUserInfo(partyInfoResult.Value.members, result =>
                 {
                     if (result.IsError)
                     {
@@ -67,13 +76,13 @@ public class PartyHandler : MonoBehaviour
 
                         // result data's order => reversed order of _partyIserIds
                         int _index = result.Value.data.Length;
-                        foreach (BaseUserInfo user in result.Value.data)
+                        foreach (BaseUserInfo userInfo in result.Value.data)
                         {
                             _index -= 1;
                             // get transform of PlayerEntryDisplay, which is child of PartyListPanel
                             Transform playerEntryDisplay = partyDisplayPanel.GetChild(_index).transform;
 
-                            if (user.userId == partyInfoResult.Value.leaderID)
+                            if (userInfo.userId == partyInfoResult.Value.leaderID)
                             {
                                 // set LeaderStatusIndicator as active
                                 Transform leaderStatusIndicator = playerEntryDisplay.GetChild(0).transform;
@@ -81,14 +90,14 @@ public class PartyHandler : MonoBehaviour
                             }
                             else
                             {
-                                if (AccelBytePlugin.GetUser().Session.UserId == partyInfoResult.Value.leaderID)
+                                if (user.Session.UserId == partyInfoResult.Value.leaderID)
                                 {
                                     // set PartyLeaderButton (promote button) as active, then add listener when onclick button
                                     Transform partyLeaderButton = playerEntryDisplay.GetChild(1).transform;
                                     partyLeaderButton.gameObject.SetActive(true);
                                     partyLeaderButton.GetComponent<Button>().onClick.AddListener(() => 
                                     {
-                                        PromotePartyLeader(user.userId);
+                                        PromotePartyLeader(userInfo.userId);
                                     });
 
                                     // set KickPartyButton as active, then add listener when onclick button
@@ -96,7 +105,7 @@ public class PartyHandler : MonoBehaviour
                                     kickPartyButton.gameObject.SetActive(true);
                                     kickPartyButton.GetComponent<Button>().onClick.AddListener(() => 
                                     {
-                                        KickParty(user.userId);
+                                        KickParty(userInfo.userId);
                                     });
                                 }
                             }
@@ -104,9 +113,9 @@ public class PartyHandler : MonoBehaviour
                             // set DisplayNameText as active, then change text to User's Display Name
                             Transform displayNameText = playerEntryDisplay.GetChild(3).transform;
                             displayNameText.gameObject.SetActive(true);
-                            displayNameText.GetComponent<Text>().text = user.displayName;
+                            displayNameText.GetComponent<Text>().text = userInfo.displayName;
 
-                            partyMembers.Add(user.userId, user.displayName);
+                            partyMembers.Add(userInfo.userId, userInfo.displayName);
                         }
                     }
                 });
@@ -142,7 +151,7 @@ public class PartyHandler : MonoBehaviour
     /// </summary>
     public void CreateParty()
     {
-        AccelBytePlugin.GetLobby().CreateParty(result => 
+        lobby.CreateParty((Result<PartyInfo> result) => 
         {
             if (result.IsError)
             {
@@ -161,7 +170,7 @@ public class PartyHandler : MonoBehaviour
     /// <param name="inviteeUserId"> userId of the user that will received the invitation</param>
     public void InviteToParty(string inviteeUserId)
     {
-        AccelBytePlugin.GetLobby().InviteToParty(inviteeUserId, result => 
+        lobby.InviteToParty(inviteeUserId, result => 
         {
             if (result.IsError)
             {
@@ -180,7 +189,7 @@ public class PartyHandler : MonoBehaviour
     /// <param name="memberUserId"> userId of the member that will be kicked from the party</param>
     public void KickParty(string memberUserId)
     {
-        AccelBytePlugin.GetLobby().KickPartyMember(memberUserId, result => 
+        lobby.KickPartyMember(memberUserId, result => 
         {
             if (result.IsError)
             {
@@ -198,7 +207,7 @@ public class PartyHandler : MonoBehaviour
     /// </summary>
     public void LeaveParty()
     {
-        AccelBytePlugin.GetLobby().LeaveParty(result => 
+        lobby.LeaveParty(result => 
         {
             if (result.IsError)
             {
@@ -220,7 +229,7 @@ public class PartyHandler : MonoBehaviour
     /// <param name="memberUserId"> userId of the member that will be promoted as party leader</param>
     public void PromotePartyLeader(string memberUserId)
     {
-        AccelBytePlugin.GetLobby().PromotePartyLeader(memberUserId, result =>
+        lobby.PromotePartyLeader(memberUserId, result =>
         {
             if (result.IsError)
             {
@@ -250,7 +259,7 @@ public class PartyHandler : MonoBehaviour
         LobbyHandler.Instance.chatHandler.AddPartyTabButton();
 
         // Get all party members data based on _partyUserIds, then update data to UI
-        AccelBytePlugin.GetUser().BulkGetUserInfo(partyDataNotifResult.Value.members, result =>
+        user.BulkGetUserInfo(partyDataNotifResult.Value.members, result =>
         {
             if (result.IsError)
             {
@@ -263,13 +272,13 @@ public class PartyHandler : MonoBehaviour
 
                 // result data's order => reversed order of _partyIserIds
                 int _index = result.Value.data.Length;
-                foreach (BaseUserInfo user in result.Value.data)
+                foreach (BaseUserInfo userInfo in result.Value.data)
                 {
                     _index -= 1;
                     // get transform of PlayerEntryDisplay, which is child of PartyListPanel
                     Transform playerEntryDisplay = partyDisplayPanel.GetChild(_index).transform;
 
-                    if (user.userId == partyDataNotifResult.Value.leader)
+                    if (userInfo.userId == partyDataNotifResult.Value.leader)
                     {
                         // set LeaderStatusIndicator as active
                         Transform leaderStatusIndicator = playerEntryDisplay.GetChild(0).transform;
@@ -277,14 +286,14 @@ public class PartyHandler : MonoBehaviour
                     }
                     else
                     {
-                        if (AccelBytePlugin.GetUser().Session.UserId == partyDataNotifResult.Value.leader)
+                        if (user.Session.UserId == partyDataNotifResult.Value.leader)
                         {
                             // set PartyLeaderButton (promote button) as active, then add listener when onclick button
                             Transform partyLeaderButton = playerEntryDisplay.GetChild(1).transform;
                             partyLeaderButton.gameObject.SetActive(true);
                             partyLeaderButton.GetComponent<Button>().onClick.AddListener(() => 
                             {
-                                PromotePartyLeader(user.userId);
+                                PromotePartyLeader(userInfo.userId);
                             });
 
                             // set KickPartyButton as active, then add listener when onclick button
@@ -292,7 +301,7 @@ public class PartyHandler : MonoBehaviour
                             kickPartyButton.gameObject.SetActive(true);
                             kickPartyButton.GetComponent<Button>().onClick.AddListener(() => 
                             {
-                                KickParty(user.userId);
+                                KickParty(userInfo.userId);
                             });
                         }
                     }
@@ -300,9 +309,9 @@ public class PartyHandler : MonoBehaviour
                     // set DisplayNameText as active, then change text to User's Display Name
                     Transform displayNameText = playerEntryDisplay.GetChild(3).transform;
                     displayNameText.gameObject.SetActive(true);
-                    displayNameText.GetComponent<Text>().text = user.displayName;
+                    displayNameText.GetComponent<Text>().text = userInfo.displayName;
 
-                    partyMembers.Add(user.userId, user.displayName);
+                    partyMembers.Add(userInfo.userId, userInfo.displayName);
                 }
             }
         });
@@ -376,7 +385,7 @@ public class PartyHandler : MonoBehaviour
     public void JoinedPartyNotification(JoinNotification joinNotification)
     {
         Debug.Log("[Party-Notification] Invitee join a party");
-        AccelBytePlugin.GetUser().GetUserByUserId(joinNotification.userID, result =>
+        user.GetUserByUserId(joinNotification.userID, result =>
         {
             if (result.IsError)
             {
@@ -396,7 +405,7 @@ public class PartyHandler : MonoBehaviour
     /// <param name="leaveNotification"> contains userId's data of the user who just left and the party leader's userId</param>
     public void LeavePartyNotification(LeaveNotification leaveNotification)
     {
-        if (leaveNotification.userID != AccelBytePlugin.GetUser().Session.UserId)
+        if (leaveNotification.userID != user.Session.UserId)
         {
             Debug.Log($"{leaveNotification.userID} leave the party");
             LobbyHandler.Instance.WriteLogMessage($"[Party] {partyMembers[leaveNotification.userID]} leave the party", Color.black);

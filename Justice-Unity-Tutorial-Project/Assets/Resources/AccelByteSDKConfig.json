@@ -1,12 +1,42 @@
 {
-  "Namespace": "<<NAMESPACE>>",
-  "UsePlayerPrefs": true,
-  "EnableDebugLog": false,
-  "DebugLogFilter": "Log",
-  "BaseUrl": "<<BASE_URL>>",
-  "ClientId": "<<CLIENT_ID>>",
-  "ClientSecret": "<<CLIENT_SECRET>>",
-  "RedirectUri": "http://127.0.0.1",
-  "AppId": null,
-  "PublisherNamespace": "accelbyte"
+  "Development": {
+    "Namespace": null,
+    "UsePlayerPrefs": true,
+    "EnableDebugLog": false,
+    "DebugLogFilter": "Log",
+    "BaseUrl": null,
+    "RedirectUri": null,
+    "AppId": null,
+    "PublisherNamespace": null
+  },
+  "Certification": {
+    "Namespace": null,
+    "UsePlayerPrefs": true,
+    "EnableDebugLog": false,
+    "DebugLogFilter": "Log",
+    "BaseUrl": null,
+    "RedirectUri": null,
+    "AppId": null,
+    "PublisherNamespace": null
+  },
+  "Production": {
+    "Namespace": null,
+    "UsePlayerPrefs": true,
+    "EnableDebugLog": false,
+    "DebugLogFilter": "Log",
+    "BaseUrl": null,
+    "RedirectUri": null,
+    "AppId": null,
+    "PublisherNamespace": null
+  },
+  "Default": {
+    "Namespace": "<<NAMESPACE>>",
+    "UsePlayerPrefs": true,
+    "EnableDebugLog": false,
+    "DebugLogFilter": "Log",
+    "BaseUrl": "<<BASE_URL>>",
+    "RedirectUri": "http://127.0.0.1",
+    "AppId": null,
+    "PublisherNamespace": "<<PUBLISHER_NAMESPACE>>"
+  }
 }

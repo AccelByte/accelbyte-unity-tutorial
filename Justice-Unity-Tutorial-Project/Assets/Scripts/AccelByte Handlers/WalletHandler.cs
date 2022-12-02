@@ -3,6 +3,7 @@
 // and restrictions contact your company contract manager.
 
 using AccelByte.Api;
+using AccelByte.Core;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -12,15 +13,23 @@ public class WalletHandler : MonoBehaviour
     private Text walletText;
 
     public static int balance;
-    
     private const string currencyCode = "VC";
+
+    private Wallet wallet;
+
+    private void Start()
+    {
+        // AccelByte's Multi Registry initialization
+        ApiClient apiClient = MultiRegistry.GetApiClient();
+        wallet = apiClient.GetApi<Wallet, WalletApi>();
+    }
 
     /// <summary>
     /// Get user's wallet information and update balance
     /// </summary>
     public void UpdateWallet()
     {
-        AccelBytePlugin.GetWallet().GetWalletInfoByCurrencyCode(currencyCode, result =>
+        wallet.GetWalletInfoByCurrencyCode(currencyCode, result =>
         {
             if (result.IsError)
             {

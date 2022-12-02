@@ -3,6 +3,7 @@
 // and restrictions contact your company contract manager.
 
 using AccelByte.Api;
+using AccelByte.Core;
 using AccelByte.Models;
 using UnityEngine;
 using UnityEngine.UI;
@@ -25,8 +26,20 @@ public class FriendsIncomingPanel : MonoBehaviour
     [SerializeField]
     private Button blockFriendButton;
 
+    // AccelByte's Multi Registry references
+    private Lobby lobby;
+    private UserProfiles userProfiles;
+
     private PublicUserData _userData;
-    
+
+    private void OnEnable()
+    {
+        // AccelByte's Multi Registry initialization
+        ApiClient apiClient = MultiRegistry.GetApiClient();
+        lobby = apiClient.GetApi<Lobby, LobbyApi>();
+        userProfiles = apiClient.GetApi<UserProfiles, UserProfilesApi>();
+    }
+
     /// <summary>
     /// An initialisation Function required to be called to Populate the UI appropriately
     /// </summary>
@@ -41,7 +54,7 @@ public class FriendsIncomingPanel : MonoBehaviour
         acceptFriendButton.onClick.AddListener(() =>
         {
             //Make the Call to Accept the Friend Request using the cached PublicUserData UserID
-            AccelBytePlugin.GetLobby().AcceptFriend(_userData.userId, result =>
+            lobby.AcceptFriend(_userData.userId, result =>
             {
                 if (result.IsError)
                 {
@@ -63,7 +76,7 @@ public class FriendsIncomingPanel : MonoBehaviour
         declineFriendButton.onClick.AddListener(() =>
         {
             //Make the Call to Decline the Friend Request using the cached PublicUserData UserID
-            AccelBytePlugin.GetLobby().RejectFriend(_userData.userId, result =>
+            lobby.RejectFriend(_userData.userId, result =>
             {
                 if (result.IsError)
                 {
@@ -85,7 +98,7 @@ public class FriendsIncomingPanel : MonoBehaviour
         blockFriendButton.onClick.AddListener(() =>
         {
             //Make the Call to Block a Player using the cached PublicUserData UserID
-            AccelBytePlugin.GetLobby().BlockPlayer(_userData.userId, result =>
+            lobby.BlockPlayer(_userData.userId, result =>
             {
                 if (result.IsError)
                 {
@@ -109,7 +122,7 @@ public class FriendsIncomingPanel : MonoBehaviour
     void RetrieveProfilePicture()
     {
         //Request the Avatar based on the UserID
-        AccelBytePlugin.GetUserProfiles().GetUserAvatar(_userData.userId,
+        userProfiles.GetUserAvatar(_userData.userId,
             result =>
             {
                 //If it's not an error, convert the returned texture into a Sprite and Display it

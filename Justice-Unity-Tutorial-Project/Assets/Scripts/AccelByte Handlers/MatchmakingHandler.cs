@@ -13,6 +13,9 @@ using System.Collections.Generic;
 
 public class MatchmakingHandler : MonoBehaviour
 {
+    // AccelByte's Multi Registry references
+    private User user;
+    private Lobby lobby;
 
     private const string DEFAULT_COUNTUP = "Time Elapsed: 00:00";
     // This default count down time must be similar with the Lobby Config in the Admin Portal
@@ -120,6 +123,14 @@ public class MatchmakingHandler : MonoBehaviour
         }
     }
 
+    private void Start()
+    {
+        // AccelByte's Multi Registry initialization
+        ApiClient apiClient = MultiRegistry.GetApiClient();
+        user = apiClient.GetApi<User, UserApi>();
+        lobby = apiClient.GetApi<Lobby, LobbyApi>();
+    }
+
     /// <summary>
     /// Grab the current Party Handler
     /// </summary>
@@ -163,7 +174,7 @@ public class MatchmakingHandler : MonoBehaviour
         if (isLocal)
         {
             string serverName = $"localds-{DeviceProvider.GetFromSystemInfo().DeviceId}";
-            AccelBytePlugin.GetLobby().StartMatchmaking(gameMode.GetString(), serverName, OnFindMatch);
+            lobby.StartMatchmaking(gameMode.GetString(), serverName, OnFindMatch);
         }
         else
         {
@@ -171,7 +182,7 @@ public class MatchmakingHandler : MonoBehaviour
             Dictionary<string, int> latencies = LobbyHandler.Instance.qosHandler.GetChoosenLatency();
 
             // Matchmaking using selected region
-            AccelBytePlugin.GetLobby().StartMatchmaking(gameMode.GetString(), null, latencies, OnFindMatch);
+            lobby.StartMatchmaking(gameMode.GetString(), null, latencies, OnFindMatch);
         }
     }
 
@@ -199,7 +210,7 @@ public class MatchmakingHandler : MonoBehaviour
     /// </summary>
     private void CancelMatchmaking()
     {
-        AccelBytePlugin.GetLobby().CancelMatchmaking(gameMode.GetString(), result =>
+        lobby.CancelMatchmaking(gameMode.GetString(), result =>
         {
             //Check this is not an error
             if (result.IsError)
@@ -220,7 +231,7 @@ public class MatchmakingHandler : MonoBehaviour
     /// </summary>
     private void ReadyMatchmaking()
     {
-        AccelBytePlugin.GetLobby().ConfirmReadyForMatch(matchId, result => 
+        lobby.ConfirmReadyForMatch(matchId, result => 
         {
             //Check this is not an error
             if (result.IsError)
@@ -292,7 +303,7 @@ public class MatchmakingHandler : MonoBehaviour
             {
                 if (string.IsNullOrEmpty(usernameList[i].GetUsernameText()))
                 {
-                    AccelBytePlugin.GetUser().GetUserByUserId(result.userId, getUserResult => 
+                    user.GetUserByUserId(result.userId, getUserResult => 
                     {
                         usernameList[i].SetUsernameText(getUserResult.Value.displayName);
                     });
@@ -329,6 +340,9 @@ public class MatchmakingHandler : MonoBehaviour
         if (result.status != "READY" && result.status != "BUSY") return;
 
         Debug.Log($"Game is started");
+
+        // Set user presence to In-Game
+        LobbyHandler.Instance.presenceHandler.SetUserStatus(UserStatus.Online, "In-Game");
 
         // Remove lobby listener before changing the scene
         LobbyHandler.Instance.RemoveLobbyListeners();

@@ -38,6 +38,10 @@ public class ChatHandler : MonoBehaviour
     [HideInInspector]
     public string activeId;
 
+    // AccelByte's Multi Registry references
+    private User user;
+    private Lobby lobby;
+
     private bool isInitialized = false;
 
     // Set the maximum chat on the list
@@ -78,6 +82,14 @@ public class ChatHandler : MonoBehaviour
         }
     }
 
+    private void Start()
+    {
+        // AccelByte's Multi Registry initialization
+        ApiClient apiClient = MultiRegistry.GetApiClient();
+        user = apiClient.GetApi<User, UserApi>();
+        lobby = apiClient.GetApi<Lobby, LobbyApi>();
+    }
+
     public void SetupChat()
     {
         if (isInitialized) return;
@@ -88,7 +100,7 @@ public class ChatHandler : MonoBehaviour
         tabList = new List<ChatTabButton>();
 
         // Join default chat channel to enable global chat
-        AccelBytePlugin.GetLobby().JoinDefaultChatChannel(result => 
+        lobby.JoinDefaultChatChannel(result => 
         {
             if (!result.IsError)
             {
@@ -118,7 +130,7 @@ public class ChatHandler : MonoBehaviour
         // Prevent sending an empty message
         if (string.IsNullOrEmpty(chatInputField.text)) return;
 
-        AccelBytePlugin.GetLobby().SendChannelChat(chatInputField.text, result => 
+        lobby.SendChannelChat(chatInputField.text, result => 
         {
             if (!result.IsError)
             {
@@ -134,7 +146,7 @@ public class ChatHandler : MonoBehaviour
         // Prevent sending an empty message
         if (string.IsNullOrEmpty(chatInputField.text)) return;
 
-        AccelBytePlugin.GetLobby().SendPersonalChat(activeId, chatInputField.text, result =>
+        lobby.SendPersonalChat(activeId, chatInputField.text, result =>
         {
             if (!result.IsError)
             {
@@ -153,14 +165,14 @@ public class ChatHandler : MonoBehaviour
         // Prevent sending an empty message
         if (string.IsNullOrEmpty(chatInputField.text)) return;
 
-        AccelBytePlugin.GetLobby().SendPartyChat(chatInputField.text, result => 
+        lobby.SendPartyChat(chatInputField.text, result => 
         {
             if (!result.IsError)
             {
                 Debug.Log("Succesfully Send Party Chat");
 
                 // Get current user id and display name
-                string myUserId = AccelBytePlugin.GetUser().Session.UserId;
+                string myUserId = user.Session.UserId;
                 string myName = LobbyHandler.Instance.partyHandler.partyMembers[myUserId];
 
                 // Write the current chat to the current user because the notification will be not sent to the sender 
@@ -514,7 +526,7 @@ public class ChatHandler : MonoBehaviour
         }
 
         // Return display name from the endpoint
-        AccelBytePlugin.GetUser().GetUserByUserId(id, x =>
+        user.GetUserByUserId(id, x =>
         {
             if (!x.IsError)
             {

@@ -4,6 +4,7 @@
 
 using UnityEngine;
 using AccelByte.Api;
+using AccelByte.Core;
 
 public class LobbyHandler : MonoBehaviour
 {
@@ -16,7 +17,7 @@ public class LobbyHandler : MonoBehaviour
     /// The Instance Getter
     /// </summary>
     public static LobbyHandler Instance => _instance;
-    
+
     /// <summary>
     /// The Instance Getter
     /// </summary>
@@ -51,6 +52,8 @@ public class LobbyHandler : MonoBehaviour
     public EntitlementHandler entitlementHandler;
     [HideInInspector]
     public FriendsManagementHandler friendsHandler;
+    [HideInInspector]
+    public PresenceHandler presenceHandler;
     #endregion
 
     private void Awake()
@@ -76,6 +79,15 @@ public class LobbyHandler : MonoBehaviour
         statisticHandler = gameObject.GetComponent<StatisticHandler>();
         entitlementHandler = gameObject.GetComponent<EntitlementHandler>();
         friendsHandler = gameObject.GetComponent<FriendsManagementHandler>();
+        presenceHandler = gameObject.GetComponent<PresenceHandler>();
+    }
+
+    private void OnEnable()
+    {
+        // AccelByte's Multi Registry initialization
+        ApiClient apiClient = MultiRegistry.GetApiClient();
+        //Get a reference to the instance of the Lobby
+        _lobby = apiClient.GetApi<Lobby, LobbyApi>();
     }
 
     /// <summary>
@@ -83,9 +95,9 @@ public class LobbyHandler : MonoBehaviour
     /// </summary>
     public void DisconnectFromLobby()
     {
-        if (AccelBytePlugin.GetLobby().IsConnected)
+        if (_lobby.IsConnected)
         {
-            AccelBytePlugin.GetLobby().Disconnect();
+            _lobby.Disconnect();
         }
     }
 
@@ -94,9 +106,6 @@ public class LobbyHandler : MonoBehaviour
     /// </summary>
     public void ConnectToLobby()
     {
-        //Get a reference to the instance of the Lobby
-        _lobby = AccelBytePlugin.GetLobby();
-
         //Init menu handler
         GetComponent<MenuHandler>().Create();
         GetComponent<MenuHandler>().Menu.gameObject.SetActive(true);

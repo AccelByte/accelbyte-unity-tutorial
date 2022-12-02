@@ -3,6 +3,7 @@
 // and restrictions contact your company contract manager.
 
 using AccelByte.Api;
+using AccelByte.Core;
 using AccelByte.Models;
 using System.Collections.Generic;
 using UnityEngine;
@@ -20,6 +21,17 @@ public class EntitlementHandler : MonoBehaviour
 
     [SerializeField]
     private GameObject entitlementsItemsPrefab;
+
+    private Entitlement entitlement;
+    private Items items;
+
+    private void Start()
+    {
+        // AccelByte's Multi Registry initialization
+        ApiClient apiClient = MultiRegistry.GetApiClient();
+        entitlement = apiClient.GetApi<Entitlement, EntitlementApi>();
+        items = apiClient.GetApi<Items, ItemsApi>();
+    }
 
     /// <summary>
     /// Set Up Inventory UI
@@ -47,7 +59,7 @@ public class EntitlementHandler : MonoBehaviour
         }
 
         // Request & retrieve the user entitlements
-        AccelBytePlugin.GetEntitlement().QueryUserEntitlements("", "", 0, 99, EntitlementsResult =>
+        entitlement.QueryUserEntitlements("", "", 0, 99, EntitlementsResult =>
         {
             if (EntitlementsResult.IsError)
             {
@@ -76,7 +88,7 @@ public class EntitlementHandler : MonoBehaviour
         const string region = "US";
 
         //Request & retrieve the information of entitlement's goods by entitlement id
-        AccelBytePlugin.GetItems().GetItemById(entitlement.itemId, region, language, GoodsDetailResult =>
+        items.GetItemById(entitlement.itemId, region, language, GoodsDetailResult =>
         {
             if (GoodsDetailResult.IsError)
             {
